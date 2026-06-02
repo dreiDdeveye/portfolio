@@ -47,6 +47,7 @@ export default function App() {
   const [searchTerm, setSearchTerm] = useState('');
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
   const [resumeOpen, setResumeOpen] = useState(false);
+  const [previewImage, setPreviewImage] = useState<{ src: string; alt: string } | null>(null);
 
   const filteredSkills = useMemo(() => {
     const query = searchTerm.trim().toLowerCase();
@@ -233,12 +234,32 @@ export default function App() {
             <div className="mt-8 grid gap-5 lg:grid-cols-2">
               {projects.map((project) => (
                 <article key={project.id} className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
-                  <img src={project.image} alt="" className="h-52 w-full object-cover" />
+                  <div className="flex h-52 items-center justify-center bg-slate-950">
+                    <img src={project.image} alt={`${project.title} proof`} className="h-full w-full object-contain" />
+                  </div>
                   <div className="p-6">
                     <p className="text-sm font-semibold uppercase text-emerald-700">{project.category}</p>
                     <h3 className="mt-2 text-2xl font-semibold text-slate-950">{project.title}</h3>
                     <p className="mt-2 text-sm font-semibold text-slate-500">{project.subtitle}</p>
                     <p className="mt-4 text-sm leading-7 text-slate-600">{project.description}</p>
+                    {project.proofImages ? (
+                      <div className="mt-5 grid grid-cols-2 gap-3">
+                        {project.proofImages.map((image, index) => (
+                          <button
+                            key={image}
+                            type="button"
+                            onClick={() => setPreviewImage({ src: image, alt: `${project.title} proof ${index + 1}` })}
+                            className="group overflow-hidden rounded-md border border-slate-200 bg-slate-950 text-left transition hover:border-emerald-500 focus:outline-none focus:ring-4 focus:ring-emerald-100"
+                          >
+                            <img
+                              src={image}
+                              alt={`${project.title} proof ${index + 1}`}
+                              className="h-28 w-full object-cover object-left-top transition group-hover:scale-[1.03]"
+                            />
+                          </button>
+                        ))}
+                      </div>
+                    ) : null}
                     <p className="mt-4 border-l-2 border-emerald-500 pl-4 text-sm leading-7 text-slate-700">{project.solution}</p>
                     <div className="mt-5 flex flex-wrap gap-2">
                       {project.tools.map((tool) => (
@@ -336,18 +357,20 @@ export default function App() {
         </section>
 
         <section id="education" className="border-b border-slate-200 bg-[#f7f8fb] py-16">
-          <div className="mx-auto grid max-w-7xl gap-8 px-5 sm:px-8 lg:grid-cols-[0.8fr_1.2fr]">
-            <div>
-              <SectionHeading eyebrow="Education" title={education.degree} />
-              <p className="mt-5 font-medium text-slate-700">{education.school}</p>
-              <p className="mt-2 text-sm font-semibold text-emerald-700">Graduated {education.graduated}</p>
-            </div>
-            <div className="grid content-start gap-4 sm:grid-cols-2">
-              {education.relevantCoursework.map((course) => (
-                <div key={course} className="flex gap-3 rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
-                  <FileText className="mt-1 h-4 w-4 flex-none text-emerald-700" />
-                  <p className="text-sm font-medium leading-7 text-slate-700">{course}</p>
-                </div>
+          <div className="mx-auto max-w-7xl px-5 sm:px-8">
+            <SectionHeading eyebrow="Education" title="Academic background and milestones." />
+            <div className="mt-8 grid gap-4">
+              {education.entries.map((entry) => (
+                <article key={`${entry.level}-${entry.school}`} className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
+                  <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+                    <div>
+                      <h3 className="text-lg font-semibold text-slate-950">{entry.level}</h3>
+                      <p className="mt-1 text-sm font-medium text-slate-700">{entry.school}</p>
+                      {entry.details ? <p className="mt-2 text-sm leading-7 text-slate-600">{entry.details.join(' • ')}</p> : null}
+                    </div>
+                    <p className="whitespace-nowrap text-sm font-semibold text-emerald-700">{entry.period}</p>
+                  </div>
+                </article>
               ))}
             </div>
           </div>
@@ -427,6 +450,25 @@ export default function App() {
           </div>
         </div>
       ) : null}
+      {previewImage ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/85 p-4 backdrop-blur-sm" role="dialog" aria-modal="true" aria-label="Project proof preview">
+          <div className="flex max-h-full w-full max-w-6xl flex-col items-end gap-3">
+            <button
+              type="button"
+              onClick={() => setPreviewImage(null)}
+              className="inline-flex h-10 w-10 items-center justify-center rounded-md bg-white text-slate-700 shadow-lg transition hover:text-slate-950"
+              aria-label="Close project proof preview"
+            >
+              <X className="h-5 w-5" />
+            </button>
+            <img
+              src={previewImage.src}
+              alt={previewImage.alt}
+              className="max-h-[85vh] w-full rounded-lg bg-slate-950 object-contain shadow-2xl"
+            />
+          </div>
+        </div>
+      ) : null}
       <div className="print-only">
         <ResumeDocument printable />
       </div>
@@ -435,7 +477,7 @@ export default function App() {
 }
 
 function ResumeDocument({ printable = false }: { printable?: boolean }) {
-  const { personal, education, experience, skills } = PORTFOLIO_DATA;
+  const { personal, education, experience, skills, projects } = PORTFOLIO_DATA;
   const supportSkills = skills.filter((skill) => skill.category === 'hardware').slice(0, 3);
   const networkSkills = skills.filter((skill) => skill.category === 'network').slice(0, 2);
   const designSkills = skills.filter((skill) => skill.category === 'design').slice(0, 2);
@@ -443,10 +485,10 @@ function ResumeDocument({ printable = false }: { printable?: boolean }) {
 
   return (
     <article id={printable ? 'print-resume' : undefined} className="a4-resume bg-white text-black shadow-xl">
-      <header className="grid grid-cols-[1fr_1.25in] gap-8 border-b-2 border-black pb-4">
+      <header className="grid grid-cols-[1fr_1.25in] gap-8 border-b-2 border-black pb-3">
         <div>
           <h1 className="resume-name">{personal.name}</h1>
-          <div className="mt-3 space-y-1 text-[10.5pt] leading-snug">
+          <div className="mt-2 space-y-0.5 text-[10pt] leading-snug">
             <p>{personal.location}</p>
             <p>{personal.email}</p>
             <p>{personal.phone}</p>
@@ -456,20 +498,20 @@ function ResumeDocument({ printable = false }: { printable?: boolean }) {
         <img src={portraitImage} alt="" className="h-[1.35in] w-[1.25in] border border-slate-300 object-cover" />
       </header>
 
-      <p className="mt-4 border-b border-slate-300 pb-4 text-[10.5pt] leading-relaxed">{personal.about}</p>
+      <p className="mt-3 border-b border-slate-300 pb-3 text-[10pt] leading-snug">{personal.about}</p>
 
       <ResumeSection title="Internship Experience">
         {experience.map((role) => (
-          <div key={`${role.company}-${role.role}`}>
+          <div key={`${role.company}-${role.role}`} className="space-y-1">
             <div className="flex items-start justify-between gap-6">
               <div>
                 <h3 className="text-[11pt] font-bold">{role.role}</h3>
-                <p className="text-[10.5pt]">{role.company}</p>
-                <p className="text-[10pt]">{role.location}</p>
+                <p className="text-[10pt] leading-snug">{role.company}</p>
+                <p className="text-[9.5pt] leading-snug">{role.location}</p>
               </div>
-              <p className="whitespace-nowrap text-[10pt]">{role.period}</p>
+              <p className="whitespace-nowrap text-[9.5pt]">{role.period}</p>
             </div>
-            <ul className="mt-2 list-disc space-y-1 pl-6 text-[10pt] leading-relaxed">
+            <ul className="list-disc space-y-0.5 pl-6 text-[9.5pt] leading-snug">
               {role.achievements.map((achievement) => (
                 <li key={achievement}>{achievement}</li>
               ))}
@@ -478,24 +520,48 @@ function ResumeDocument({ printable = false }: { printable?: boolean }) {
         ))}
       </ResumeSection>
 
-      <ResumeSection title="Education">
-        <div className="flex items-start justify-between gap-6">
-          <div>
-            <h3 className="text-[11pt] font-bold">{education.degree}</h3>
-            <p className="text-[10.5pt]">{education.school}</p>
+      <ResumeSection title="Projects">
+        {projects.map((project) => (
+          <div key={project.id} className="space-y-1">
+            <h3 className="text-[11pt] font-bold">{project.title}</h3>
+            <ul className="list-disc space-y-0.5 pl-6 text-[9.5pt] leading-snug">
+              {(project.resumeBullets ?? [project.description]).map((bullet) => (
+                <li key={bullet}>{bullet}</li>
+              ))}
+            </ul>
           </div>
-          <p className="whitespace-nowrap text-[10pt]">Graduated: {education.graduated}</p>
-        </div>
+        ))}
+      </ResumeSection>
+
+      <ResumeSection title="Education">
+        {education.entries.map((entry) => (
+          <div key={`${entry.level}-${entry.school}`} className="space-y-1">
+            <div className="flex items-start justify-between gap-6">
+              <div>
+                <h3 className="text-[10.5pt] font-bold leading-snug">{entry.level}</h3>
+                <p className="text-[10pt] leading-snug">{entry.school}</p>
+                {entry.details ? <p className="text-[9.5pt] leading-snug">{entry.details.join(' • ')}</p> : null}
+              </div>
+              <p className="whitespace-nowrap text-[9.5pt]">{entry.period}</p>
+            </div>
+          </div>
+        ))}
       </ResumeSection>
 
       <ResumeSection title="Technical Skills">
-        <SkillList title="Hardware & Software Support" items={supportSkills.map((skill) => skill.name)} />
-        <SkillList title="Networking Fundamentals" items={networkSkills.map((skill) => skill.name)} />
-        <div className="mt-3 text-[10pt]">
-          <h3 className="font-bold">Tools & Software</h3>
-          <p className="mt-1">{softwareSkills.join(' | ')}</p>
+        <div className="grid grid-cols-2 gap-x-10">
+          <div>
+            <SkillList title="Hardware & Software Support" items={supportSkills.map((skill) => skill.name)} />
+            <div className="mt-2 text-[9.5pt]">
+              <h3 className="font-bold">Tools & Software</h3>
+              <p className="mt-1">{softwareSkills.join(' | ')}</p>
+            </div>
+          </div>
+          <div>
+            <SkillList title="Networking Fundamentals" items={networkSkills.map((skill) => skill.name)} />
+            <SkillList title="Graphic Design" items={designSkills.map((skill) => skill.name)} />
+          </div>
         </div>
-        <SkillList title="Graphic Design" items={designSkills.map((skill) => skill.name)} />
       </ResumeSection>
     </article>
   );
@@ -503,18 +569,18 @@ function ResumeDocument({ printable = false }: { printable?: boolean }) {
 
 function ResumeSection({ title, children }: { title: string; children: ReactNode }) {
   return (
-    <section className="mt-4">
-      <h2 className="border-b border-black pb-1 text-[13pt] font-bold uppercase tracking-[0.16em]">{title}</h2>
-      <div className="mt-2">{children}</div>
+    <section className="mt-3">
+      <h2 className="border-b border-black pb-0.5 text-[12pt] font-bold uppercase tracking-[0.14em]">{title}</h2>
+      <div className="mt-1.5">{children}</div>
     </section>
   );
 }
 
 function SkillList({ title, items }: { title: string; items: string[] }) {
   return (
-    <div className="mt-3 text-[10pt]">
+    <div className="mt-2 text-[9.5pt]">
       <h3 className="font-bold">{title}</h3>
-      <ul className="mt-1 list-disc space-y-1 pl-6">
+      <ul className="mt-0.5 list-disc space-y-0.5 pl-6 leading-snug">
         {items.map((item) => (
           <li key={item}>{item}</li>
         ))}

@@ -64,12 +64,12 @@
   width: 210mm;
   height: 297mm;
   overflow: hidden;
-  padding: 11mm 20mm 10mm;
+  padding: 9mm 20mm 7mm;
   font-family: "Times New Roman", Times, serif;
 }
 
 .resume-name {
-  font-size: 26pt;
+  font-size: 24pt;
   font-weight: 700;
   line-height: 1.05;
 }
@@ -113,7 +113,7 @@
     width: 210mm;
     height: 297mm;
     margin: 0;
-    padding: 11mm 20mm 10mm;
+    padding: 9mm 20mm 7mm;
     box-shadow: none;
     overflow: hidden;
   }
