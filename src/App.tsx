@@ -751,7 +751,8 @@ function MessageChat({ onClose }: { onClose: () => void }) {
 
           <div className="flex-1 space-y-3 overflow-auto bg-slate-50 p-5">
             <div className="max-w-[82%] rounded-lg rounded-tl-sm bg-white px-4 py-3 text-sm leading-6 text-slate-700 shadow-sm">
-              Hi recruiter, thanks for visiting my portfolio. Please leave your email, company name, and a brief message. I'll respond as soon as I can.
+              Hello, and thank you for visiting my portfolio! If you'd like to discuss a job opportunity, project, or collaboration, please leave your email, company name, and a brief message. I'll review your inquiry and get back to you as soon as possible. I look forward to connecting with you.
+
             </div>
             {submissionState === 'sent' ? (
               <div className="ml-auto max-w-[82%] rounded-lg rounded-tr-sm bg-emerald-600 px-4 py-3 text-sm leading-6 text-white shadow-sm">
