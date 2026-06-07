@@ -54,6 +54,8 @@ export interface PortfolioData {
     phone: string;
     linkedin: string;
     linkedinDisplay: string;
+    portfolio: string;
+    portfolioDisplay: string;
     about: string;
     highlights: string[];
   };
@@ -79,6 +81,8 @@ export const PORTFOLIO_DATA: PortfolioData = {
     phone: '+63 992 319 3769',
     linkedin: 'https://www.linkedin.com/in/paul-andrei-vicente-a7341740a',
     linkedinDisplay: 'linkedin.com/in/paul-andrei-vicente-a7341740a',
+    portfolio: 'https://portfolio-gamma-blond-68.vercel.app/',
+    portfolioDisplay: 'portfolio-gamma-blond-68.vercel.app',
     about:
       'Detail-oriented BSIT graduate with hands-on experience in hardware and software troubleshooting, basic networking, and technical support through internship experience at TESDA. Skilled in Microsoft Office, Canva, Adobe tools, and end-user support with strong problem-solving skills and an AI enthusiast mindset.',
     highlights: [

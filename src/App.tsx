@@ -512,7 +512,12 @@ function ResumeDocument({ printable = false }: { printable?: boolean }) {
             <p>{personal.location}</p>
             <p>{personal.email}</p>
             <p>{personal.phone}</p>
-            <p>{personal.linkedinDisplay}</p>
+            <p>
+              <a href={personal.linkedin}>{personal.linkedinDisplay}</a>
+            </p>
+            <p>
+              <a href={personal.portfolio}>{personal.portfolioDisplay}</a>
+            </p>
           </div>
         </div>
         <img src={portraitImage} alt="" className="h-[1.35in] w-[1.25in] border border-slate-300 object-cover" />
