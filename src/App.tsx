@@ -1,4 +1,4 @@
-import { type ReactNode, useEffect, useMemo, useState } from 'react';
+import { type FormEvent, type ReactNode, useEffect, useMemo, useState } from 'react';
 import {
   BriefcaseBusiness,
   Check,
@@ -14,6 +14,7 @@ import {
   Network,
   Phone,
   Search,
+  Send,
   ShieldCheck,
   Sparkles,
   Wrench,
@@ -24,6 +25,13 @@ import portraitImage from './assets/profile-photo.jpg';
 
 type SkillFilter = 'all' | 'hardware' | 'network' | 'software' | 'design';
 type IconType = typeof Mail;
+type MessageFormState = {
+  email: string;
+  company: string;
+  message: string;
+  website: string;
+};
+type SubmissionState = 'idle' | 'sending' | 'sent' | 'error';
 
 const filters: { id: SkillFilter; label: string }[] = [
   { id: 'all', label: 'All skills' },
@@ -47,6 +55,7 @@ export default function App() {
   const [searchTerm, setSearchTerm] = useState('');
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
   const [resumeOpen, setResumeOpen] = useState(false);
+  const [messageOpen, setMessageOpen] = useState(false);
   const [previewImage, setPreviewImage] = useState<{ src: string; alt: string } | null>(null);
 
   const filteredSkills = useMemo(() => {
@@ -96,15 +105,25 @@ export default function App() {
             <a href="#skills" className="hover:text-slate-950">Skills</a>
             <a href="#contact" className="hover:text-slate-950">Contact</a>
           </div>
-          <a
-            href={getGmailComposeUrl(personal.email)}
-            target="_blank"
-            rel="noreferrer"
-            className="inline-flex items-center gap-2 rounded-md bg-slate-950 px-4 py-2 text-sm font-semibold text-white transition hover:bg-slate-800"
-          >
-            <Mail className="h-4 w-4" />
-            Email
-          </a>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setMessageOpen(true)}
+              className="inline-flex items-center gap-2 rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-800 transition hover:border-slate-950"
+            >
+              <Send className="h-4 w-4" />
+              Message
+            </button>
+            <a
+              href={getGmailComposeUrl(personal.email)}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center gap-2 rounded-md bg-slate-950 px-4 py-2 text-sm font-semibold text-white transition hover:bg-slate-800"
+            >
+              <Mail className="h-4 w-4" />
+              Email
+            </a>
+          </div>
         </nav>
       </header>
 
@@ -137,7 +156,7 @@ export default function App() {
                   className="inline-flex items-center justify-center gap-2 rounded-md border border-slate-300 bg-white px-5 py-3 text-sm font-semibold text-slate-800 transition hover:border-slate-950"
                 >
                   <BriefcaseBusiness className="h-4 w-4" />
-                  View portfolio
+                  View projects
                 </a>
                 <a
                   href="#resume"
@@ -450,6 +469,7 @@ export default function App() {
           </div>
         </div>
       ) : null}
+      {messageOpen ? <MessageChat onClose={() => setMessageOpen(false)} /> : null}
       {previewImage ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/85 p-4 backdrop-blur-sm" role="dialog" aria-modal="true" aria-label="Project proof preview">
           <div className="flex max-h-full w-full max-w-6xl flex-col items-end gap-3">
@@ -646,4 +666,196 @@ function ContactRow({
       </button>
     </div>
   );
+}
+
+function MessageChat({ onClose }: { onClose: () => void }) {
+  const endpoint = import.meta.env.VITE_MESSAGE_ENDPOINT;
+  const [form, setForm] = useState<MessageFormState>({
+    email: '',
+    company: '',
+    message: '',
+    website: '',
+  });
+  const [submissionState, setSubmissionState] = useState<SubmissionState>('idle');
+  const [statusText, setStatusText] = useState('');
+
+  const updateField = (field: keyof MessageFormState, value: string) => {
+    setForm((current) => ({ ...current, [field]: value }));
+    if (submissionState !== 'sending') {
+      setSubmissionState('idle');
+      setStatusText('');
+    }
+  };
+
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+
+    if (form.website.trim()) {
+      return;
+    }
+
+    if (!endpoint) {
+      setSubmissionState('error');
+      setStatusText('Message storage is not connected yet. Add VITE_MESSAGE_ENDPOINT to .env.');
+      return;
+    }
+
+    setSubmissionState('sending');
+    setStatusText('Sending message...');
+
+    const payload = new URLSearchParams({
+      email: form.email.trim(),
+      company: form.company.trim(),
+      message: form.message.trim(),
+      page: window.location.href,
+      submittedAt: new Date().toISOString(),
+    });
+
+    try {
+      submitSpreadsheetMessage(endpoint, payload);
+
+      setForm({ email: '', company: '', message: '', website: '' });
+      setSubmissionState('sent');
+      setStatusText('Message sent. It has been saved to the spreadsheet.');
+    } catch {
+      setSubmissionState('error');
+      setStatusText('Could not send the message. Please try again or use email.');
+    }
+  };
+
+  const isSending = submissionState === 'sending';
+
+  return (
+    <div className="fixed inset-0 z-50 bg-slate-950/50 px-4 py-5 backdrop-blur-sm" role="dialog" aria-modal="true" aria-label="Message chat">
+      <div className="mx-auto flex h-full max-w-7xl items-start justify-end">
+        <div className="flex h-full max-h-[680px] w-full max-w-md flex-col overflow-hidden rounded-lg border border-slate-200 bg-white shadow-2xl">
+          <div className="flex items-center justify-between gap-4 border-b border-slate-200 bg-slate-950 px-5 py-4 text-white">
+            <div className="flex min-w-0 items-center gap-3">
+              <div className="flex h-10 w-10 flex-none items-center justify-center rounded-md bg-emerald-300 text-slate-950">
+                <Mail className="h-5 w-5" />
+              </div>
+              <div className="min-w-0">
+                <p className="truncate text-sm font-semibold">Portfolio Message</p>
+                <p className="truncate text-xs text-emerald-200">Usually replies by email</p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={onClose}
+              className="inline-flex h-9 w-9 flex-none items-center justify-center rounded-md bg-white/10 text-slate-200 transition hover:bg-white/15 hover:text-white"
+              aria-label="Close message chat"
+            >
+              <X className="h-5 w-5" />
+            </button>
+          </div>
+
+          <div className="flex-1 space-y-3 overflow-auto bg-slate-50 p-5">
+            <div className="max-w-[82%] rounded-lg rounded-tl-sm bg-white px-4 py-3 text-sm leading-6 text-slate-700 shadow-sm">
+              Hi recruiter, thanks for visiting my portfolio. Please leave your email, company name, and a brief message. I'll respond as soon as I can.
+            </div>
+            {submissionState === 'sent' ? (
+              <div className="ml-auto max-w-[82%] rounded-lg rounded-tr-sm bg-emerald-600 px-4 py-3 text-sm leading-6 text-white shadow-sm">
+                Message sent. I will get back to you by email.
+              </div>
+            ) : null}
+          </div>
+
+          <form onSubmit={handleSubmit} className="border-t border-slate-200 bg-white p-4">
+            <div className="grid gap-3 sm:grid-cols-2">
+              <label className="block">
+                <span className="sr-only">Email</span>
+                <input
+                  value={form.email}
+                  onChange={(event) => updateField('email', event.target.value)}
+                  required
+                  type="email"
+                  autoComplete="email"
+                  className="w-full rounded-md border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-slate-950 focus:ring-4 focus:ring-slate-100"
+                  placeholder="Email"
+                />
+              </label>
+
+              <label className="block">
+                <span className="sr-only">Company name</span>
+                <input
+                  value={form.company}
+                  onChange={(event) => updateField('company', event.target.value)}
+                  required
+                  autoComplete="organization"
+                  className="w-full rounded-md border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-slate-950 focus:ring-4 focus:ring-slate-100"
+                  placeholder="Company"
+                />
+              </label>
+            </div>
+
+            <label className="mt-3 block">
+              <span className="sr-only">Message</span>
+              <textarea
+                value={form.message}
+                onChange={(event) => updateField('message', event.target.value)}
+                required
+                rows={4}
+                className="w-full resize-none rounded-md border border-slate-300 bg-white px-3 py-2.5 text-sm leading-6 text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-slate-950 focus:ring-4 focus:ring-slate-100"
+                placeholder="Message"
+              />
+            </label>
+
+            <label className="hidden">
+              Website
+              <input
+                value={form.website}
+                onChange={(event) => updateField('website', event.target.value)}
+                tabIndex={-1}
+                autoComplete="off"
+              />
+            </label>
+
+            <div className="mt-3 flex items-center justify-between gap-3">
+              <p className={`min-h-5 text-xs font-medium ${submissionState === 'error' ? 'text-rose-600' : 'text-slate-500'}`} role="status">
+                {statusText}
+              </p>
+              <button
+                type="submit"
+                disabled={isSending}
+                className="inline-flex h-10 w-10 flex-none items-center justify-center rounded-md bg-slate-950 text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-70"
+                aria-label={isSending ? 'Sending message' : 'Send message'}
+              >
+                <Send className="h-4 w-4" />
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function submitSpreadsheetMessage(endpoint: string, payload: URLSearchParams) {
+  const iframeName = `message-target-${Date.now()}`;
+  const iframe = document.createElement('iframe');
+  iframe.name = iframeName;
+  iframe.style.display = 'none';
+  document.body.appendChild(iframe);
+
+  const form = document.createElement('form');
+  form.method = 'POST';
+  form.action = endpoint;
+  form.target = iframeName;
+  form.style.display = 'none';
+
+  payload.forEach((value, key) => {
+    const input = document.createElement('input');
+    input.type = 'hidden';
+    input.name = key;
+    input.value = value;
+    form.appendChild(input);
+  });
+
+  document.body.appendChild(form);
+  form.submit();
+
+  window.setTimeout(() => {
+    form.remove();
+    iframe.remove();
+  }, 5000);
 }
